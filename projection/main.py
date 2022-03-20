@@ -19,8 +19,8 @@ def train(args):
     dataloader = make_loader(args.max_t, args.max_v, args.batch_size)
 
     # Create optimizer and criterion
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.001, weight_decay=1e-3)
-    criterion = torch.nn.MSELoss(reduction="mean")
+    optimizer = torch.optim.SGD(model.parameters(), lr=3e-5, weight_decay=1e-4)
+    criterion = torch.nn.MSELoss()
 
     # Start training
     total_loss = []
@@ -31,8 +31,9 @@ def train(args):
             combine_features = combine_features.to(device)
             ground_truth = ground_truth.to(device)
 
-            predictions = model(combine_features)
-            loss = criterion(predictions, ground_truth)
+            prediction = model(combine_features)
+            loss = criterion(prediction, ground_truth)
+
             # Update the model
             optimizer.zero_grad()
             loss.backward()
@@ -53,12 +54,12 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--in_features", type=int, default=2)
-    parser.add_argument("--hidden_features", type=int, default=32)
+    parser.add_argument("--hidden_features", type=int, default=16)
     parser.add_argument("--out_features", type=int, default=2)
     parser.add_argument("--max_t", type=float, default=90)
     parser.add_argument("--max_v", type=float, default=100)
-    parser.add_argument("--batch_size", type=int, default=8)
-    parser.add_argument("--epochs", type=int, default=1000)
+    parser.add_argument("--batch_size", type=int, default=1)
+    parser.add_argument("--epochs", type=int, default=5000)
     parser.add_argument("--device", type=str, default="cpu")
     args = parser.parse_args()
 

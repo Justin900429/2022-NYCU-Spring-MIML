@@ -7,16 +7,12 @@ class ProjectileModel(nn.Module):
 
         self.layers = nn.Sequential(
             nn.Linear(in_features, hidden_features),
-            nn.ReLU(),
+            nn.Sigmoid(),
+            nn.Linear(hidden_features, hidden_features),
+            nn.Sigmoid(),
             nn.Linear(hidden_features, out_features),
+            nn.ReLU()
         )
-        self.apply(self.weights_init)
-
-    @staticmethod
-    def weights_init(m):
-        classname = m.__class__.__name__
-        if classname.find("Linear") != -1:
-            nn.init.normal_(m.weight.data, 0.0, 0.001)
 
     def forward(self, x):
         return self.layers(x)
