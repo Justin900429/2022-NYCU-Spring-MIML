@@ -12,6 +12,8 @@ class Projection(Dataset):
     def __init__(self, max_theta, max_velocity, batch_size):
         self.max_theta = max_theta
         self.max_velocity = max_velocity
+        self.max_height = (max_velocity**2) / (2 * self.g)
+        self.max_x_range = (max_velocity**2) / self.g
         self.batch_size = batch_size
 
     def __len__(self):
@@ -21,14 +23,19 @@ class Projection(Dataset):
         # You don't need idx in fact, just randomly generate the data
         theta = random.random() * self.max_theta
         velocity = random.random() * self.max_velocity
-        combine_features = torch.tensor([math.radians(theta), velocity])
 
         # Compute the real answer
-        max_height = (velocity * math.sin(math.radians(theta)))**2 / (2 * self.g)
+        height = (velocity * math.sin(math.radians(theta)))**2 / (2 * self.g)
         x_range = (velocity**2) * math.sin(math.radians(theta * 2)) / self.g
-        ground_truth = torch.tensor([max_height, x_range])
+        height = torch.tensor([height / self.max_height])
+        x_range = torch.tensor([x_range / self.max_x_range])
 
-        return combine_features, ground_truth
+        combine = torch.cat([
+            torch.tensor([theta / self.max_theta]),
+            torch.tensor([velocity / self.max_velocity])
+        ])
+
+        return combine, (height, x_range)
 
 
 def make_loader(max_theta=90.0, max_velocity=100, batch_size=128):

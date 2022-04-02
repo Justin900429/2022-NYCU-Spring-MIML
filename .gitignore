@@ -150,6 +150,8 @@ crashlytics.properties
 crashlytics-build.properties
 fabric.properties
 
+*.xlsx
 *.docx
 *.pdf
 *.DS_Store
+*.pt

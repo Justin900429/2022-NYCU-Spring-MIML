@@ -6,13 +6,21 @@ class ProjectileModel(nn.Module):
         super(ProjectileModel, self).__init__()
 
         self.layers = nn.Sequential(
-            nn.Linear(in_features, hidden_features),
-            nn.Sigmoid(),
-            nn.Linear(hidden_features, hidden_features),
-            nn.Sigmoid(),
+            nn.Linear(in_features, hidden_features, bias=False),
+            nn.BatchNorm1d(hidden_features),
+            nn.ReLU(),
+        )
+
+        self.height_layer = nn.Sequential(
             nn.Linear(hidden_features, out_features),
-            nn.ReLU()
+            nn.Sigmoid()
+        )
+
+        self.range_layer = nn.Sequential(
+            nn.Linear(hidden_features, out_features),
+            nn.Sigmoid()
         )
 
     def forward(self, x):
-        return self.layers(x)
+        base = self.layers(x)
+        return self.height_layer(base), self.range_layer(base)
