@@ -9,7 +9,7 @@ from dataset import make_loader
 
 def train(args):
     if "cuda" in args.device:
-        args.cuda = args.device if torch.cuda.is_available() else "cpu"
+        args.device = args.device if torch.cuda.is_available() else "cpu"
     device = torch.device(args.device)
 
     # Create model
@@ -20,10 +20,10 @@ def train(args):
 
     # Create optimizer and criterion
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-2)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=500, gamma=0.7)
     criterion = torch.nn.MSELoss()
 
     # Start training
-    min_loss = 1e9
     total_loss = []
 
     progress_bar = tqdm(range(args.epochs))
@@ -47,6 +47,7 @@ def train(args):
 
             batch_loss += loss.item()
 
+        scheduler.step()
         batch_loss /= len(dataloader)
         progress_bar.set_postfix({"loss": batch_loss})
         total_loss.append(batch_loss)

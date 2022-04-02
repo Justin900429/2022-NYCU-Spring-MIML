@@ -1,11 +1,15 @@
 import argparse
 import torch
+import matplotlib.pyplot as plt
 
 from model import ProjectileModel
 from dataset import make_loader
 
+plt.style.use("ggplot")
 
-def examine(args):
+
+@torch.no_grad()
+def line_test(args):
     if "cuda" in args.device:
         args.cuda = args.device if torch.cuda.is_available() else "cpu"
     device = torch.device(args.device)
@@ -18,19 +22,33 @@ def examine(args):
     # Create dataloader
     dataloader = make_loader(args.max_t, args.max_v, args.batch_size)
 
+    dataset_max_degree = dataloader.dataset.max_theta
     dataset_max_height = dataloader.dataset.max_height
     dataset_max_x_range = dataloader.dataset.max_x_range
 
-    total_loss = 0
-    for x, (max_height, x_range) in dataloader:
-        # Move to target device
-        x = x.to(device)
-        max_height = max_height.to(device)
-        x_range = x_range.to(device)
+    # Set up the degree
+    degree_list = list(range(10, 90, 10))
+    plt.figure(figsize=(8, 6))
 
-        pred_height, pred_range = model(x)
-        print("True:", (max_height.item() * dataset_max_height), (x_range.item() * dataset_max_x_range))
-        print("Prediction:", pred_height.item() * dataset_max_height, pred_range.item() * dataset_max_x_range)
+    for degree in degree_list:
+        v = torch.rand(1000)
+        norm_deg = torch.tensor([degree / dataset_max_degree])
+        norm_deg = norm_deg.expand(v.shape[0])
+        combine_features = torch.stack([norm_deg, v], dim=-1).to(device)
+
+        pred_height, pred_range = model(combine_features)
+        plt.scatter(
+            (pred_range * dataset_max_x_range).tolist(),
+            (pred_height * dataset_max_height).tolist(),
+            label=rf"{degree}$^\circ$")
+
+    plt.legend()
+    plt.xlabel("R")
+    plt.ylabel("H")
+    plt.title(r"$R=4H\cot \theta$")
+    plt.grid(False)
+    plt.savefig("line_test.pdf")
+    plt.show()
 
 
 if __name__ == "__main__":
@@ -48,4 +66,4 @@ if __name__ == "__main__":
     parser.add_argument("--device", type=str, default="cpu")
     args = parser.parse_args()
 
-    examine(args)
+    line_test(args)
