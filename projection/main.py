@@ -55,6 +55,7 @@ def train(args):
     torch.save(model.state_dict(), "model.pt")
 
     plt.plot(total_loss)
+    plt.savefig(args.outfile)
     plt.show()
 
 
@@ -70,6 +71,7 @@ if __name__ == "__main__":
     parser.add_argument("--max_v", type=float, default=100)
     parser.add_argument("--batch_size", type=int, default=1024)
     parser.add_argument("--epochs", type=int, default=10000)
+    parser.add_argument("--outfile", type=str, default="plot/loss.pdf")
     parser.add_argument("--device", type=str, default="cpu")
     args = parser.parse_args()
 

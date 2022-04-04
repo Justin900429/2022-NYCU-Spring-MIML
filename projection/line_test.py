@@ -31,7 +31,7 @@ def line_test(args):
     plt.figure(figsize=(8, 6))
 
     for degree in degree_list:
-        v = torch.rand(1000)
+        v = torch.rand(1500)
         norm_deg = torch.tensor([degree / dataset_max_degree])
         norm_deg = norm_deg.expand(v.shape[0])
         combine_features = torch.stack([norm_deg, v], dim=-1).to(device)
@@ -40,14 +40,14 @@ def line_test(args):
         plt.scatter(
             (pred_range * dataset_max_x_range).tolist(),
             (pred_height * dataset_max_height).tolist(),
-            label=rf"{degree}$^\circ$")
+            s=5, label=rf"{degree}$^\circ$")
 
     plt.legend()
     plt.xlabel("R")
     plt.ylabel("H")
     plt.title(r"$R=4H\cot \theta$")
     plt.grid(False)
-    plt.savefig("line_test.pdf")
+    plt.savefig(args.outfile)
     plt.show()
 
 
@@ -63,6 +63,7 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=1)
     parser.add_argument("--max_t", type=float, default=90)
     parser.add_argument("--max_v", type=float, default=100)
+    parser.add_argument("--outfile", type=str, default="plot/line_test.pdf")
     parser.add_argument("--device", type=str, default="cpu")
     args = parser.parse_args()
 
