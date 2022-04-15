@@ -1,26 +1,13 @@
-import torch.nn as nn
+from tensorflow import keras
+from tensorflow.keras import layers
 
 
-class ProjectileModel(nn.Module):
-    def __init__(self, in_features, hidden_features, out_features):
-        super(ProjectileModel, self).__init__()
+def model_define():
+    inputs = keras.Input(shape=(2))
+    x = layers.Dense(16, use_bias=False)(inputs)
+    x = layers.BatchNormalization()(x)
+    x = layers.ReLU()(x)
+    outputs = layers.Dense(2, activation="sigmoid")(x)
 
-        self.layers = nn.Sequential(
-            nn.Linear(in_features, hidden_features, bias=False),
-            nn.BatchNorm1d(hidden_features),
-            nn.ReLU(),
-        )
+    return keras.Model(inputs, outputs)
 
-        self.height_layer = nn.Sequential(
-            nn.Linear(hidden_features, out_features),
-            nn.Sigmoid()
-        )
-
-        self.range_layer = nn.Sequential(
-            nn.Linear(hidden_features, out_features),
-            nn.Sigmoid()
-        )
-
-    def forward(self, x):
-        base = self.layers(x)
-        return self.height_layer(base), self.range_layer(base)

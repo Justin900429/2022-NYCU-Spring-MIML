@@ -1,78 +1,86 @@
-import argparse
+import numpy as np
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.python.client import device_lib
 from tqdm import tqdm
-import matplotlib.pyplot as plt
-import torch
 
-from model import ProjectileModel
-from dataset import make_loader
+from dataset import ProjectionDataset
+from model import model_define
 
 
-def train(args):
-    if "cuda" in args.device:
-        args.device = args.device if torch.cuda.is_available() else "cpu"
-    device = torch.device(args.device)
+class SaveModel(tf.keras.callbacks.Callback):
+    def __init__(self, weights_file, monitor="loss", mode="min",
+                 save_weights_only=False):
+        super().__init__()
 
-    # Create model
-    model = ProjectileModel(args.in_features, args.hidden_features, args.out_features).to(device)
+        self.weights_file = weights_file
+        self.monitor = monitor
 
-    # Create dataloader
-    dataloader = make_loader(args.max_t, args.max_v, args.batch_size)
+        self.mode = mode
+        self.wave_weights_only = save_weights_only
 
-    # Create optimizer and criterion
-    optimizer = torch.optim.Adam(model.parameters(), lr=5e-2)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=500, gamma=0.7)
-    criterion = torch.nn.MSELoss()
+        if mode == "min":
+            self.best = np.Inf
+        else:
+            self.best = -np.Inf
 
-    # Start training
-    total_loss = []
+    def save_model(self):
+        if self.wave_weights_only:
+            self.model.save_weights(self.weights_file)
+        else:
+            self.model.save(self.weights_file)
 
-    progress_bar = tqdm(range(args.epochs))
-    for _ in progress_bar:
-        batch_loss = 0.0
-        for x, (max_height, x_range) in dataloader:
-            # Move to target device
-            x = x.to(device)
-            max_height = max_height.to(device)
-            x_range = x_range.to(device)
+    def on_epoch_end(self, epoch, logs=None):
+        monitor_value = logs.get(self.monitor)
 
-            pred_height, pred_range = model(x)
-            height_loss = criterion(pred_height, max_height)
-            range_loss = criterion(pred_range, x_range)
-            loss = height_loss + range_loss
+        if self.mode == "min" and monitor_value < self.best:
+            self.save_model()
+            self.best = monitor_value
+        elif self.mode == "max" and monitor_value > self.best:
+            self.save_model()
+            self.best = monitor_value
 
-            # Update the model
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
 
-            batch_loss += loss.item()
+def mse_loss(y_true, y_pred):
+    diff = tf.reduce_sum((y_true - y_pred) ** 2, axis=-1)
+    return tf.reduce_mean(diff)
 
-        scheduler.step()
-        batch_loss /= len(dataloader)
-        progress_bar.set_postfix({"loss": batch_loss})
-        total_loss.append(batch_loss)
 
-    torch.save(model.state_dict(), "model.pt")
+def scheduler_func(epoch, lr):
+    if (epoch != 0) and (epoch % 500 == 0):
+        return lr * 0.7
+    else:
+        return lr
 
-    plt.plot(total_loss)
-    plt.savefig(args.outfile)
-    plt.show()
+
+class Progressbar(tf.keras.callbacks.Callback):
+    def __init__(self, epochs, monitor="loss"):
+        super().__init__()
+        self.monitor = monitor
+        self.epochs = epochs
+        self.pbar = tqdm(total=epochs)
+
+    def on_epoch_end(self, epoch, logs=None):
+        monitor_value = logs.get(self.monitor)
+        self.pbar.update(epoch)
+
+        if epoch == self.epochs - 1:
+            self.pbar.close()
 
 
 if __name__ == "__main__":
-    import os
-    os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
+    print(device_lib.list_local_devices())
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--in_features", type=int, default=2)
-    parser.add_argument("--hidden_features", type=int, default=16)
-    parser.add_argument("--out_features", type=int, default=1)
-    parser.add_argument("--max_t", type=float, default=90)
-    parser.add_argument("--max_v", type=float, default=100)
-    parser.add_argument("--batch_size", type=int, default=1024)
-    parser.add_argument("--epochs", type=int, default=10000)
-    parser.add_argument("--outfile", type=str, default="plot/loss.pdf")
-    parser.add_argument("--device", type=str, default="cpu")
-    args = parser.parse_args()
+    # Create model and dataset
+    model = model_define()
+    model.compile(keras.optimizers.Adam(learning_rate=5e-2),
+                  loss=tf.keras.losses.MeanSquaredError())
 
-    train(args)
+    train_data = ProjectionDataset()
+
+    model.fit(train_data, epochs=10000,
+              callbacks=[
+                SaveModel("model.h5"),
+                tf.keras.callbacks.LearningRateScheduler(scheduler_func),
+              ], verbose=0)
+
