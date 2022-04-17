@@ -2,7 +2,6 @@ import argparse
 
 import math
 import numpy as np
-
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 import torch
@@ -81,6 +80,7 @@ def line_test(args):
 
 if __name__ == "__main__":
     import os
+
     os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
 
     parser = argparse.ArgumentParser()
