@@ -1,6 +1,10 @@
-import tensorflow as tf
+import math
+
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.linear_model import LinearRegression
+
+import tensorflow as tf
 
 from dataset import ProjectionDataset
 from model import model_define
@@ -14,6 +18,7 @@ def plot_model(model, weight):
     plt.figure(figsize=(8, 6))
 
     model.load_weights(weight)
+    temp_m = 0
 
     for degree in degree_list:
         v = tf.random.uniform(shape=(1500,))
@@ -24,15 +29,29 @@ def plot_model(model, weight):
         res = model(combine_features)
         pred_height = res[:, 0].numpy()
         pred_range = res[:, 1].numpy()
+
+        line_fit = LinearRegression().fit(
+            pred_range * max_x_range,
+            pred_height * max_height
+        )
+        m = line_fit.coef_.reshape(-1)[0]
+        correct_coef = math.tan(math.radians(degree)) / 4
+        cos_sim = compute_cosine_sim([1, m], [1, correct_coef])
+        temp_m += cos_sim
+
         plt.scatter(
             (pred_range * max_x_range).tolist(),
             (pred_height * max_height).tolist(),
-            s=5, label=rf"{degree}$^\circ$")
+            s=5, label=rf"{degree}$^\circ$ m={cos_sim:.5f}")
 
+    temp_m /= len(degree_list)
+    plt.rcParams.update({
+        "savefig.facecolor": (0.0, 0.0, 0.0, 0.0)
+    })
     plt.legend()
     plt.xlabel("R")
     plt.ylabel("H")
-    plt.title(r"$R=4H\cot \theta$")
+    plt.title(rf"$R=4H\cot \theta$, sim={temp_m:.3f}")
     plt.grid(False)
     plt.savefig("test.pdf")
     plt.show()
