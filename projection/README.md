@@ -36,5 +36,5 @@ Instead of using loss to evaluate the performance, we decide to use R-H plot to 
 We also tested the model on TensorFlow with **batch size=4096, epoch=100**, and provide the colab notebook.
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1ojsWMdbVOC7lH_nkeT1VBTkcvLRiB9Zj#scrollTo=5Sl6zYOuAzFG)
 
-[See the plot](plot/ten_bs_4096.pdf)
+[See the plot](plot/tf_bs_4096.pdf)
 
