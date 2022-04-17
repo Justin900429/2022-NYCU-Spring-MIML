@@ -156,5 +156,6 @@ fabric.properties
 *.DS_Store
 *.pt
 !projection/**/*.pdf
+!projection/**/*.pt
 
 

@@ -58,17 +58,19 @@ def line_test(args):
             (pred_range * dataset_max_x_range).numpy(), (pred_height * dataset_max_height).numpy()
         )
         m = line_fit.coef_.reshape(-1)[0]
-
-        correct_coef = (1 / math.tan(degree))
+        correct_coef = math.tan(math.radians(degree)) / 4
         cos_sim = compute_cosine_sim([1, m], [1, correct_coef])
         temp_m += cos_sim
 
         plt.scatter(
             (pred_range * dataset_max_x_range).tolist(),
             (pred_height * dataset_max_height).tolist(),
-            s=5, label=rf"{degree}$^\circ$, m={cos_sim:.3f}")
+            s=5, label=rf"{degree}$^\circ$, m={cos_sim:.5f}")
 
     temp_m /= len(degree_list)
+    plt.rcParams.update({
+        "savefig.facecolor": (0.0, 0.0, 0.0, 0.0)
+    })
     plt.legend()
     plt.xlabel("R")
     plt.ylabel("H")
