@@ -12,6 +12,16 @@ from model import model_define
 plt.style.use("ggplot")
 
 
+def compute_cosine_sim(x, y):
+    if isinstance(x, (list, tuple)):
+        x = np.array(x)
+
+    if isinstance(y, (list, tuple)):
+        y = np.array(y)
+
+    return (x / np.linalg.norm(x)) @ (y / np.linalg.norm(y)).T
+
+
 def plot_model(model, weight):
     # Set up the degree
     degree_list = list(range(10, 90, 10))
