@@ -1,11 +1,26 @@
 import argparse
-import torch
+
+import math
+import numpy as np
+
 import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
+import torch
 
 from model import ProjectileModel
 from dataset import make_loader
 
 plt.style.use("ggplot")
+
+
+def compute_cosine_sim(x, y):
+    if isinstance(x, (list, tuple)):
+        x = np.array(x)
+
+    if isinstance(y, (list, tuple)):
+        y = np.array(y)
+
+    return (x / np.linalg.norm(x)) @ (y / np.linalg.norm(y)).T
 
 
 @torch.no_grad()
@@ -30,6 +45,8 @@ def line_test(args):
     degree_list = list(range(10, 90, 10))
     plt.figure(figsize=(8, 6))
 
+    temp_m = 0
+
     for degree in degree_list:
         v = torch.rand(1500)
         norm_deg = torch.tensor([degree / dataset_max_degree])
@@ -37,15 +54,26 @@ def line_test(args):
         combine_features = torch.stack([norm_deg, v], dim=-1).to(device)
 
         pred_height, pred_range = model(combine_features)
+
+        line_fit = LinearRegression().fit(
+            (pred_range * dataset_max_x_range).numpy(), (pred_height * dataset_max_height).numpy()
+        )
+        m = line_fit.coef_.reshape(-1)[0]
+
+        correct_coef = (1 / math.tan(degree))
+        cos_sim = compute_cosine_sim([1, m], [1, correct_coef])
+        temp_m += cos_sim
+
         plt.scatter(
             (pred_range * dataset_max_x_range).tolist(),
             (pred_height * dataset_max_height).tolist(),
-            s=5, label=rf"{degree}$^\circ$")
+            s=5, label=rf"{degree}$^\circ$, m={cos_sim:.3f}")
 
+    temp_m /= len(degree_list)
     plt.legend()
     plt.xlabel("R")
     plt.ylabel("H")
-    plt.title(r"$R=4H\cot \theta$")
+    plt.title(rf"$R=4H\cot \theta$, sim={temp_m:.3f}")
     plt.grid(False)
     plt.savefig(args.outfile)
     plt.show()
@@ -57,7 +85,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--in_features", type=int, default=2)
-    parser.add_argument("--hidden_features", type=int, default=16)
+    parser.add_argument("--hidden_features", type=int, default=32)
     parser.add_argument("--out_features", type=int, default=1)
     parser.add_argument("--weight", type=str, default="model.pt")
     parser.add_argument("--batch_size", type=int, default=1)
