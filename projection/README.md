@@ -1,4 +1,4 @@
-# README
+# PyTorch version
 
 ## Introduction
 In this project, we use neural networks to predict the highest height and the longest range during the projectile. We implement the neural networks with the PyTorch framework.
